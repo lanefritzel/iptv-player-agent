@@ -1,11 +1,11 @@
 package com.frequentsee.tv.agent
 
 import android.content.Intent
-import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
-import android.text.format.Formatter
 import androidx.activity.ComponentActivity
+import java.net.Inet4Address
+import java.net.NetworkInterface
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -45,10 +45,12 @@ class MainActivity : ComponentActivity() {
 
     private fun getIpAddress(): String? {
         return try {
-            val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-            val ipAddress = wifiManager.connectionInfo.ipAddress
-            @Suppress("DEPRECATION")
-            Formatter.formatIpAddress(ipAddress)
+            NetworkInterface.getNetworkInterfaces()?.asSequence()
+                ?.filter { it.isUp && !it.isLoopback }
+                ?.flatMap { it.inetAddresses.asSequence() }
+                ?.filterIsInstance<Inet4Address>()
+                ?.map { it.hostAddress }
+                ?.firstOrNull { it != "127.0.0.1" }
         } catch (e: Exception) {
             null
         }

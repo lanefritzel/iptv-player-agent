@@ -5,11 +5,11 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.IBinder
-import android.text.format.Formatter
 import android.util.Log
+import java.net.Inet4Address
+import java.net.NetworkInterface
 import androidx.core.app.NotificationCompat
 import com.frequentsee.tv.agent.server.CastServer
 import java.io.IOException
@@ -72,10 +72,12 @@ class ReceiverService : Service() {
 
     private fun getIpAddress(): String? {
         return try {
-            val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-            val ipAddress = wifiManager.connectionInfo.ipAddress
-            @Suppress("DEPRECATION")
-            Formatter.formatIpAddress(ipAddress)
+            NetworkInterface.getNetworkInterfaces()?.asSequence()
+                ?.filter { it.isUp && !it.isLoopback }
+                ?.flatMap { it.inetAddresses.asSequence() }
+                ?.filterIsInstance<Inet4Address>()
+                ?.map { it.hostAddress }
+                ?.firstOrNull { it != "127.0.0.1" }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get IP address", e)
             null
